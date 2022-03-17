@@ -1,2 +1,2 @@
 [web]
-ec2-35-173-128-154.compute-1.amazonaws.com
+
