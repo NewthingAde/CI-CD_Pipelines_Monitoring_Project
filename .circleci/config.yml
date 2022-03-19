@@ -231,14 +231,18 @@ jobs:
           name: Run database migration
           command: |
             cd backend
-            npm run migrations > migrations_dump.txt
-            cat ./migrations_dump.txt
+            npm run migrations > migrations_log.txt
+            cat ./migrations_log.txt
       - run:
           name: Send database migration status to kvdb.io
           command: |
-            if grep -q "has been executed successfully" ./backend/migrations_dump.txt;
+            if grep "has been executed successfully" ./backend/migrations_log.txt;
             then
-            curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/migration_${CIRCLE_WORKFLOW_ID:0:7} -d '1'
+              echo "Database migration has been executed successfully"
+              curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/migration_${CIRCLE_WORKFLOW_ID:0:7} -d '1'
+            else
+              echo "Database migration has failed, verify DB setup!"
+              curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/migration_${CIRCLE_WORKFLOW_ID:0:7} -d '1'
             fi
       - destroy-environment:
           workflowID: ${CIRCLE_WORKFLOW_ID:0:7}    
