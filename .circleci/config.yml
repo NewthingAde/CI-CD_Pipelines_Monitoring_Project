@@ -43,6 +43,7 @@ commands:
           when: on_fail
           command: |
             aws cloudformation delete-stack --stack-name udapeople-frontend-<< parameters.workflowID >>
+  
   revert-migrations:
     description: Revert the last migration if successfully run in the current workflow.
     parameters:
@@ -220,6 +221,11 @@ jobs:
       - image: circleci/node:13.8.0
     steps:
       - checkout
+      - restore_cache:
+          keys: [backend-build-cache]
+      - attach_workspace:
+          at: .
+      - create-dotenv-file
       - run:
           name: Run database migration
           command: |
