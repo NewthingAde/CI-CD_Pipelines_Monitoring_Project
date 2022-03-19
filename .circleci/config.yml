@@ -232,6 +232,7 @@ jobs:
             cd backend
             npm install
             npm run migrations > migrations_dump.txt
+            cat ./migrations_dump.txt
       - run:
           name: Send database migration status to kvdb.io
           command: |
