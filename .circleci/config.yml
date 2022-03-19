@@ -253,11 +253,9 @@ jobs:
           command: |
             
             cd frontend
-            yum install -y curl tar gzip
+            yum install -y curl tar gzip curl
             curl -sL https://rpm.nodesource.com/setup_10.x | bash -
             yum install -y nodejs
-            node --version
-            npm --version
       - attach_workspace:
           at: .
       - run:
@@ -265,19 +263,16 @@ jobs:
           command: |
             BACKEND_IP=$(curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/migration_${CIRCLE_WORKFLOW_ID:0:7})
             export API_URL="http://${BACKEND_IP}:3030"
-            export API_URL="http://${BACKEND_IP}:3030"
-            echo "API_URL = ${API_URL}"
-            echo API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
+            echo "${API_URL}"
+            echo ENVIRONMENT=production > "frontend/.env"
+            echo API_URL=${API_URL} >> "frontend/.env"
             cat frontend/.env
-
       - run:
           name: Build frontend
           command: |
             cd frontend
             npm install
             npm run build
-            tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
-            aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
       - run:
           name: Deploy frontend objects
           command: |
@@ -316,16 +311,11 @@ jobs:
       - run:
           name: Deploy backend
           command: |
-            cd backend
-            npm i
-            npm run build
-            cd ..
-            tar -C backend -czvf artifact.tar.gz .
-            cd .circleci/ansible
-            echo "Contents  of the inventory.txt file is url"
-            cat inventory.txt
-            ansible-playbook -i inventory.txt deploy-backend.yml
-            
+            pwd
+            tar czf backend.tar.gz backend/
+            export ANSIBLE_HOST_KEY_CHECKING=false
+            ansible-playbook -i ./.circleci/ansible/inventory.txt ./.circleci/ansible/deploy-backend.yml -vvv
+
       - destroy-environment:
           workflowID: ${CIRCLE_WORKFLOW_ID:0:7}
       - revert-migrations:
