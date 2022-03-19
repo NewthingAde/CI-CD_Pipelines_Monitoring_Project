@@ -220,17 +220,12 @@ jobs:
       - image: circleci/node:13.8.0
     steps:
       - checkout
-      - restore_cache:
-          keys: [backend-build-cache]
-      - attach_workspace:
-          at: .
-      - create-dotenv-file
       - run:
           name: Run database migration
           command: |
             cd backend
-            npm run migrations > migrations_log.txt
-            cat ./migrations_log.txt
+            npm install
+            npm run migrations > migrations_dump.txt
       - run:
           name: Send database migration status to kvdb.io
           command: |
