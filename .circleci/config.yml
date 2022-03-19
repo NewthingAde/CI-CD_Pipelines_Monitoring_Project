@@ -229,12 +229,8 @@ jobs:
       - run:
           name: Send database migration status to kvdb.io
           command: |
-            if grep "has been executed successfully" ./backend/migrations_dump.txt;
+            if grep -q "has been executed successfully." ~/project/backend/migrations_dump.txt
             then
-              echo "Database migration has been executed successfully"
-              curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/migration_${CIRCLE_WORKFLOW_ID:0:7} -d '1'
-            else
-              echo "Database migration has failed, verify DB setup!"
               curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/migration_${CIRCLE_WORKFLOW_ID:0:7} -d '1'
             fi
       - destroy-environment:
