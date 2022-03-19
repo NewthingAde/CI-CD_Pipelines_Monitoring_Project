@@ -322,43 +322,48 @@ jobs:
           workflowID: ${CIRCLE_WORKFLOW_ID:0:7} 
   smoke-test:
     docker:
-      # Lightweight Docker image
-      - image: alpine:latest 
+      - image: python:3.7-alpine3.11  
     steps:
       - checkout
-      - attach_workspace:
-          at: .
       - run:
           name: Install dependencies
           command: |
-            apk --no-cache add curl
-            apk add --update npm
-            apk add --no-cache python3 py3-pip \
-              && pip3 install --upgrade pip \
-              && pip install awscli
-      - create-dotenv-file
+            apk add --update curl nodejs npm
+            pip install awscli
+      - run:
+          name: Get backend url
+          command: |
+              export BACKEND_IP=$(aws ec2 --region us-east-1 describe-instances \
+                      --filters Name=instance-state-name,Values=running Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID} \
+                      --query 'Reservations[*].Instances[*].PublicIpAddress' \
+                      --output text)
+              echo BACKEND_URL: http://${BACKEND_IP}:3030/api/status
       - run:
           name: Backend smoke test.
           command: |
-            export API_URL="http://${BACKEND_IP}:3030"
-            echo "${API_URL}"
-            if curl "${API_URL}/api/status" | grep "ok"
-            then
-                return 0
-            else
-                return 1
-            fi
+              export BACKEND_IP=$(aws ec2 --region us-east-1 describe-instances \
+                     --filters Name=instance-state-name,Values=running Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID} \
+                     --query 'Reservations[*].Instances[*].PublicIpAddress' \
+                     --output text)
+              echo $BACKEND_IP
+              if 
+                 curl -s http://${BACKEND_IP}:3030/api/status | grep "ok"
+              then
+                 exit 0
+              else
+                 exit 1
+              fi
       - run:
           name: Frontend smoke test.
           command: |
-            URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-east-1.amazonaws.com/#/employees"            
-            echo ${URL} 
-            if curl -s ${URL} | grep "Welcome"
-            then
-              return 1
-            else
-              return 1
-            fi
+             URL="http://udapeople-${CIRCLE_WORKFLOW_ID}.s3-website-us-east-1.amazonaws.com/#/employees"            
+             echo ${URL} 
+             if curl -s http://udapeople-${CIRCLE_WORKFLOW_ID}.s3-website-us-east-1.amazonaws.com/#/employees | grep "Welcome"
+             then
+                 return 1
+             else
+                 return 1
+             fi
       - destroy-environment:
           workflowID: ${CIRCLE_WORKFLOW_ID:0:7}
       - revert-migrations:
