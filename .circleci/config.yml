@@ -223,8 +223,6 @@ jobs:
       - checkout
       - restore_cache:
           keys: [backend-build-cache]
-      - attach_workspace:
-          at: .
       - create-dotenv-file
       - run:
           name: Run database migration
