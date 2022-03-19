@@ -166,7 +166,7 @@ jobs:
       - run:
           name: Add back-end ip to ansible inventory
           command: |                
-            BACKEND_IP=$(curl -H "token: 0000af93-1ba9-4592-b6f7-40e0d96eedc7" --request GET https://api.memstash.io/values/BACKEND_IP_${CIRCLE_WORKFLOW_ID:0:7}) 
+            BACKEND_IP=$(curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1') 
             echo ${BACKEND_IP} >> ./.circleci/ansible/inventory.txt
             cat ./.circleci/ansible/inventory.txt
       - persist_to_workspace:
@@ -202,6 +202,155 @@ jobs:
       - destroy-environment:
           workflowID: ${CIRCLE_WORKFLOW_ID:0:7}  
 
+  run-migrations:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [backend-build-cache]
+      - attach_workspace:
+          at: .
+      - create-dotenv-file
+      - run:
+          name: Run database migration
+          command: |
+            cd ./backend
+            pwd
+            npm run migrations > migrations_log.txt
+            cat ./migrations_log.txt
+      - run:
+          name: Send database migration status to memstash
+          command: |
+            if grep "has been executed successfully" ./backend/migrations_log.txt;
+            then
+              echo "Database migration has been executed successfully"
+              curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
+            else
+              echo "Database migration has failed, verify DB setup!"
+              curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
+            fi
+      - destroy-environment:
+          workflowID: ${CIRCLE_WORKFLOW_ID:0:7}       
+
+  deploy-frontend:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            yum install -y tar gzip curl
+            curl -sL https://rpm.nodesource.com/setup_10.x | bash -
+            yum install -y nodejs
+      - attach_workspace:
+          at: .
+      - run:
+          name: Get backend url and setup environment variables
+          command: |
+            BACKEND_IP=$(curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1')
+            export API_URL="http://${BACKEND_IP}:3030"
+            echo "${API_URL}"
+            echo ENVIRONMENT=production > "frontend/.env"
+            echo API_URL=${API_URL} >> "frontend/.env"
+            cat frontend/.env
+      - run:
+          name: Build frontend
+          command: |
+            cd ./frontend
+            pwd
+            npm i
+            npm run build
+      - run:
+          name: Deploy frontend objects
+          command: |
+            aws s3 cp ./frontend/dist "s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}" --recursive
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./frontend/dist
+      - destroy-environment:
+          workflowID: ${CIRCLE_WORKFLOW_ID:0:7}
+      - revert-migrations:
+          workflowID: ${CIRCLE_WORKFLOW_ID:0:7} 
+
+
+
+  deploy-backend:
+    docker:
+      # Docker image that supports Ansible
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints: 
+            - "22:48:af:fd:76:af:49:65:7c:10:4a:68:63:df:9e:11"
+      - attach_workspace:
+          at: .
+      - restore_cache:
+          keys: [backend-build-cache]
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --update ansible
+            apk add --no-cache curl
+            apk add --no-cache openssh-client
+            apk add --no-cache --upgrade bash
+            pip install awscli
+      - create-dotenv-file
+      - run:
+          name: Deploy backend
+          command: |
+            pwd
+            tar czf backend.tar.gz backend/
+            export ANSIBLE_HOST_KEY_CHECKING=false
+            ansible-playbook -i ./.circleci/ansible/inventory.txt ./.circleci/ansible/deploy-backend.yml -vvv
+      - destroy-environment:
+          workflowID: ${CIRCLE_WORKFLOW_ID:0:7}
+      - revert-migrations:
+          workflowID: ${CIRCLE_WORKFLOW_ID:0:7}
+
+  smoke-test:
+    docker:
+      - image: alpine:latest 
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Install dependencies
+          command: |
+            apk --no-cache add curl
+            apk add --update npm
+            apk add --no-cache python3 py3-pip \
+              && pip3 install --upgrade pip \
+              && pip install awscli
+      - create-dotenv-file
+      - run:
+          name: Backend smoke test.
+          command: |
+            BACKEND_IP=$(curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1')
+            API_URL="http://${BACKEND_IP}:3030"
+            echo "${API_URL}"
+            curl -s "${API_URL}/api/status" -v
+      - run:
+          name: Frontend smoke test.
+          command: |
+            URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-west-2.amazonaws.com"
+            if curl -s ${URL} | grep "Welcome"
+            then
+            return 1
+            else
+            return 1
+            fi
+      - destroy-environment:
+          workflowID: ${CIRCLE_WORKFLOW_ID:0:7}
+      - revert-migrations:
+          workflowID: ${CIRCLE_WORKFLOW_ID:0:7}  
+
+  
+
 
 
 
@@ -225,3 +374,11 @@ workflows:
               only: [test-feature-branch]
       - configure-infrastructure:
           requires: [deploy-infrastructure]
+      - run-migrations:
+          requires: [configure-infrastructure]
+      - deploy-frontend:
+          requires: [run-migrations]
+      - deploy-backend:
+          requires: [run-migrations]
+      - smoke-test:
+          requires: [deploy-backend, deploy-frontend]

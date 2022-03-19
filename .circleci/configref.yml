@@ -252,7 +252,7 @@ jobs:
 
   cloudfront-update:
     docker:
-       - image: aws 
+       - image: 
       # Docker image here that supports AWS CLI
     steps:
       # Checkout code from git
@@ -274,7 +274,7 @@ jobs:
       - run:
           name: Get old stack workflow id
           command: |
-            # your code here
+# your code here
             export OldWorkflowID="the id here"
             export STACKS=[] #put the list of stacks here
       - run:
@@ -282,7 +282,7 @@ jobs:
           command: |
             if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
             then
-              # your code here
+        # your code here
 
 
 workflows:
