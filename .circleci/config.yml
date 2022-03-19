@@ -53,12 +53,11 @@ commands:
           name: Revert migrations
           when: on_fail
           command: |
-            # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
-            SUCCESS=$(curl -H "token: 7079126b-54c1-4ae1-b7cf-577d8a27c76f" --request GET https://api.memstash.io/values/DB_MIGRATION_STATUS_<< parameters.workflowID >>)
+            SUCCESS=$curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/migration_${CIRCLE_WORKFLOW_ID:0:7}
             echo $SUCCESS
-            if(( "$SUCCESS"=="success" )); 
+            if(( "$SUCCESS"== 1 )); 
             then
-              cd ./backend
+              cd backend
               npm install
               npm run migrations:revert
             fi
@@ -214,10 +213,7 @@ jobs:
       - run:
           name: Configure server
           command: |
-            pwd
-            cat ./.circleci/ansible/inventory.txt
-            export ANSIBLE_HOST_KEY_CHECKING=false
-            ansible-playbook -i ./.circleci/ansible/inventory.txt ./.circleci/ansible/configure-server.yml
+            cd .circleci/ansible ansible-playbook -i inventory.txt configure-server.yml
       - destroy-environment:
           workflowID: ${CIRCLE_WORKFLOW_ID:0:7}        
   
@@ -399,3 +395,5 @@ workflows:
           requires: [run-migrations]
       - deploy-backend:
           requires: [run-migrations]
+      - smoke-test:
+          requires: [deploy-backend, deploy-frontend]
