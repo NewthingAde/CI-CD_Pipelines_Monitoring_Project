@@ -44,23 +44,23 @@ commands:
           command: |
             aws cloudformation delete-stack --stack-name udapeople-frontend-<< parameters.workflowID >>
   
+          
   revert-migrations:
     description: Revert the last migration if successfully run in the current workflow.
     parameters:
-      workflowID:
-        type: string      
+      workflow_id:
+        type: string
     steps:
       - run:
           name: Revert migrations
           when: on_fail
           command: |
             SUCCESS=$curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/migration_${CIRCLE_WORKFLOW_ID:0:7}
-            echo $SUCCESS
-            if(( "$SUCCESS"== "success" ));
+            if(( $SUCCESS==1 )); 
             then
-              cd backend
+              cd ~/project/backend
               npm install
-              npm run migrations:revert
+              npm run migration:revert
             fi
 
 jobs:
@@ -323,32 +323,48 @@ jobs:
   smoke-test:
     docker:
       # Lightweight Docker image
-      - image: alpine:latest 
+      - image: python:3.7-alpine3.11  
     steps:
       - checkout
-      - attach_workspace:
-          at: .
       - run:
           name: Install dependencies
           command: |
-            apk --no-cache add curl
-            apk add --update npm
-            apk add --no-cache python3 py3-pip \
-              && pip3 install --upgrade pip \
-              && pip install awscli
-      - create-dotenv-file
+            apk add --update curl nodejs npm
+            pip install awscli
+      - run:
+            name: Get backend url
+            command: |
+                export BACKEND_IP=$(aws ec2 --region us-east-1 describe-instances \
+                        --filters Name=instance-state-name,Values=running Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID} \
+                        --query 'Reservations[*].Instances[*].PublicIpAddress' \
+                        --output text)
+                echo BACKEND_URL: http://${BACKEND_IP}:3030/api/status
       - run:
           name: Backend smoke test.
           command: |
-            BACKEND_IP=$(curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/migration_${CIRCLE_WORKFLOW_ID:0:7})
-            API_URL="http://${BACKEND_IP}:3030"
-            echo "${API_URL}"
-            curl -s "${API_URL}/api/status" -v
+              export BACKEND_IP=$(aws ec2 --region us-east-1 describe-instances \
+                     --filters Name=instance-state-name,Values=running Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID} \
+                     --query 'Reservations[*].Instances[*].PublicIpAddress' \
+                     --output text)
+              echo $BACKEND_IP
+              if 
+                 curl -s http://${BACKEND_IP}:3030/api/status | grep "ok"
+              then
+                 exit 0
+              else
+                 exit 1
+              fi
       - run:
           name: Frontend smoke test.
           command: |
-            URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-west-2.amazonaws.com"
-            curl -s ${URL} | grep "Welcome"
+             URL="http://udapeople-${CIRCLE_WORKFLOW_ID}.s3-website-us-east-1.amazonaws.com/#/employees"            
+             echo ${URL} 
+             if curl -s http://udapeople-${CIRCLE_WORKFLOW_ID}.s3-website-us-east-1.amazonaws.com/#/employees | grep "Welcome"
+             then
+                 return 1
+             else
+                 return 1
+             fi
       - destroy-environment:
           workflowID: ${CIRCLE_WORKFLOW_ID:0:7}
       - revert-migrations:
