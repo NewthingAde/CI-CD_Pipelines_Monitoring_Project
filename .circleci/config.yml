@@ -56,7 +56,7 @@ commands:
           command: |
             SUCCESS=$curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/migration_${CIRCLE_WORKFLOW_ID:0:7}
             echo $SUCCESS
-            if(( "$SUCCESS"== 1 ));
+            if(( "$SUCCESS"== "success" ));
             then
               cd backend
               npm install
