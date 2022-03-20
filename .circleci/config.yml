@@ -333,26 +333,25 @@ jobs:
       - run:
           name: Get backend url
           command: |
-              export BACKEND_IP=$(aws ec2 --region us-east-1 describe-instances \
+            export BACKEND_IP=$(aws ec2 --region us-east-1 describe-instances \
                       --filters Name=instance-state-name,Values=running Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID} \
                       --query 'Reservations[*].Instances[*].PublicIpAddress' \
                       --output text)
-              echo BACKEND_URL: http://${BACKEND_IP}:3030/api/status
+            echo BACKEND_URL: http://${BACKEND_IP}:3030/api/status
       - run:
           name: Backend smoke test.
           command: |
-              export BACKEND_IP=$(aws ec2 --region us-east-1 describe-instances \
-                     --filters Name=instance-state-name,Values=running Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID} \
-                     --query 'Reservations[*].Instances[*].PublicIpAddress' \
-                     --output text)
-              echo $BACKEND_IP
-              if 
-                 curl -s http://${BACKEND_IP}:3030/api/status | grep "ok"
-              then
-                 exit 0
-              else
-                 exit 1
-              fi
+            export BACKEND_IP=$(aws ec2 --region us-east-1 describe-instances \
+                    --filters Name=instance-state-name,Values=running Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID} \
+                    --query 'Reservations[*].Instances[*].PublicIpAddress' \
+                    --output text)
+            echo $BACKEND_IP
+            if curl -s http://${BACKEND_IP}:3030/api/status | grep "ok"
+            then
+                exit 0
+            else
+                exit 1
+            fi
       - run:
           name: Frontend smoke test.
           command: |
