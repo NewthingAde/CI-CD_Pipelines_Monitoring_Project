@@ -16,8 +16,7 @@
         timeout: 600
 
   roles:
-    - configure-server
-    - configure-prometheus-node-exporter
+    - deploy
   
   environment:
     ENVIRONMENT: "{{ lookup('env', 'ENVIRONMENT') }}"
