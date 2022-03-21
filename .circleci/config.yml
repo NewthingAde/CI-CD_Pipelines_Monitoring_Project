@@ -326,10 +326,14 @@ jobs:
       - run:
           name: Deploy backend
           command: |
-            cd /home
+            cd ..
             tar czf backend.tar.gz -P /home/circleci/project/backend/dist
-            export ANSIBLE_HOST_KEY_CHECKING=False 
-            ansible-playbook -i inventory.txt deploy-backend.yml
+            echo "Contents  of the inventory.txt file is -------"
+           
+            export ANSIBLE_HOST_KEY_CHECKING=False
+            ansible-playbook \
+              -i .circleci/ansible/inventory.txt \
+              .circleci/ansible/deploy-backend.yml
 
       - destroy-environment:
           workflowID: ${CIRCLE_WORKFLOW_ID:0:7}
