@@ -3,9 +3,7 @@
 - name: "configuration play." 
   hosts: web
   user: ubuntu
-  become: true
-  become_method: sudo
-  become_user: root  
+  become: true 
   gather_facts: false
   vars:
     - ansible_python_interpreter: /usr/bin/python3
@@ -17,6 +15,8 @@
       wait_for_connection:
         delay: 0
         timeout: 600
+  roles:
+    - configure-server
       
 
   
@@ -33,6 +33,4 @@
     - TYPEORM_DATABASE: "{{ lookup('env', 'TYPEORM_DATABASE')}}"
     - TYPEORM_MIGRATIONS: "{{ lookup('env', 'TYPEORM_MIGRATIONS')}}"
     - TYPEORM_MIGRATIONS_DIR: "{{ lookup('env', 'TYPEORM_MIGRATIONS_DIR')}}"
-  roles:
-    - configure-server
-    - configure-prometheus-node-exporter
+  
