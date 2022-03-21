@@ -9,7 +9,6 @@
     - ansible_stdout_callback: yaml
   
   roles:
-    - configure-server
     - deploy
   
   environment:
