@@ -306,6 +306,7 @@ jobs:
             - "22:48:af:fd:76:af:49:65:7c:10:4a:68:63:df:9e:11"
       - attach_workspace:
           at: .
+      - create-dotenv-file
       - run:
           name: Install dependencies
           command: |
