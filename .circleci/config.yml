@@ -297,7 +297,7 @@ jobs:
   deploy-backend:
     docker:
       # Docker image that supports Ansible
-      - image: circleci/node:13.8.0
+      - image: python:3.7-alpine3.11
     steps:
       - aws-cli/setup
       - checkout
@@ -306,31 +306,31 @@ jobs:
             - "22:48:af:fd:76:af:49:65:7c:10:4a:68:63:df:9e:11"
       - attach_workspace:
           at: .
-      
       - run:
           name: Install dependencies
           command: |
-            sudo apt -yq install python3 ansible
-
+            apk add --update ansible openssh-client tar gzip 
       - restore_cache:
           keys: [backend-build-cache]
-
-      - create-dotenv-file 
-      - run:
-          name: Get a fresh backend build
-          working_directory: backend
-          command: |
-            npm install
-            npm run build 
-
       - run:
           name: Deploy backend
           command: |
-            cd ..
-            tar -C backend -czvf artifact.tar.gz .
-            cd .circleci/ansible
-            cat inventory.txt
-            ansible-playbook -i inventory.txt deploy-backend.yml
+            cd /home
+            tar czf backend.tar.gz -P /home/circleci/project/backend/dist
+
+      - run:
+          name: Deploy backend 2
+          command: |
+            export ANSIBLE_HOST_KEY_CHECKING=False
+            ansible-playbook \
+              -i .circleci/ansible/inventory.txt \
+              .circleci/ansible/deploy-backend.yml
+      - run:
+          name: Install AWS CLI for rollback
+          when: on_fail
+          command: |
+            apk add --update py3-pip && pip3 install --upgrade pip && pip3 install awscli
+            
       - destroy-environment:
           workflowID: ${CIRCLE_WORKFLOW_ID:0:7}
       - revert-migrations:
