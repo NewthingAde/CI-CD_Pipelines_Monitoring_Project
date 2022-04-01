@@ -307,31 +307,40 @@ jobs:
           at: .
       - run:
           name: Install dependencies
-          command: |
-            # your code here
-            sudo apt -yq install python3 ansible
-      - restore_cache:
-          keys: [backend-build-cache]    
-      
-      - create-dotenv-file 
-      - run:
-          name: Get a fresh backend build
-          working_directory: backend
-          command: |
-            # Your code here
-            npm install
-            npm run-script build                 
+          command: |  
+            pip install --upgrade pip
+            pip install awscli
+            apk add --update nodejs npm ansible zip
       - run:
           name: Deploy backend
           command: |
-            # your code here
-            tar -C backend -czf \
-              .circleci/ansible/roles/deploy/files/backend-artifact.tar.gz .
-            export ANSIBLE_HOST_KEY_CHECKING=False  
-            ansible-playbook -i .circleci/ansible/inventory.txt \
-              .circleci/ansible/deploy-backend.yml  
+              cd backend
+              apk add --update nodejs-npm
+              apk add --update npm
+              npm install
+              npm run build
+              echo build successful
+
+      - create-dotenv-file
        
-             
+      - run:
+          name: Configure server
+          command: |    
+              cd /root/project/backend/dist
+              tar czf dist.tar.gz .
+              mkdir -p ~/project/.circleci/ansible/roles/deploy/files/
+              mv dist.tar.gz ~/project/.circleci/ansible/roles/deploy/files/
+              cd /root/project/backend/node_modules
+              tar czf node_modules.tar.gz .
+              mv node_modules.tar.gz ~/project/.circleci/ansible/roles/deploy/files/
+
+      - run:
+          name: Run Ansible
+          command: |
+            cd /root/project/.circleci/ansible
+              echo "Contents  of the inventory.txt file is _____________________________________>>"
+              cat inventory.txt
+              ansible-playbook deploy-backend.yml -i inventory.txt
 
       - destroy-environment:
           workflowID: ${CIRCLE_WORKFLOW_ID:0:7}
