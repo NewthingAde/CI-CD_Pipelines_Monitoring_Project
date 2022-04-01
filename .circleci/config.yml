@@ -10,17 +10,17 @@ commands:
       - run:
           name: Add env vars to .env file
           command: |
-            echo ENVIRONMENT=$ENVIRONMENT > "./backend/.env"
-            echo TYPEORM_CONNECTION=$TYPEORM_CONNECTION >> "./backend/.env"
-            echo TYPEORM_MIGRATIONS_DIR=$TYPEORM_MIGRATIONS_DIR >> "./backend/.env"
-            echo TYPEORM_ENTITIES=$TYPEORM_ENTITIES >> "./backend/.env"
-            echo TYPEORM_MIGRATIONS=$TYPEORM_MIGRATIONS >> "./backend/.env"
-            echo TYPEORM_HOST=$TYPEORM_HOST >> "./backend/.env"
-            echo TYPEORM_PORT=$TYPEORM_PORT >> "./backend/.env"
-            echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> "./backend/.env"
-            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> "./backend/.env"
-            echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> "./backend/.env"
-
+            echo ENVIROMENT=production > "backend/dist/.env"
+            echo TYPEORM_CONNECTION=postgres >> "backend/dist/.env"
+            echo TYPEORM_ENTITIES=./modules/domain/**/*.entity{.ts,.js} >> "backend/dist/.env"
+            echo TYPEORM_HOST=$TYPEORM_HOST >> "backend/dist/.env"
+            echo TYPEORM_PORT=$TYPEORM_PORT >> "backend/dist/.env"
+            echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> "backend/dist/.env"
+            echo TYPEORM_MIGRATIONS=$TYPEORM_MIGRATIONS >> "backend/dist/.env"
+            echo TYPEORM_MIGRATIONS_DIR=$TYPEORM_MIGRATIONS_DIR >> "backend/dist/.env"
+            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> "backend/dist/.env"
+            echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> "backend/dist/.env"
+  
   destroy-environment:
     description: Destroy backend and frontend cloudformation stacks given a workflow ID.
     parameters:
@@ -341,6 +341,7 @@ jobs:
               echo "Contents  of the inventory.txt file is _____________________________________>>"
               cat inventory.txt
               ansible-playbook deploy-backend.yml -i inventory.txt
+              
 
       - destroy-environment:
           workflowID: ${CIRCLE_WORKFLOW_ID:0:7}
