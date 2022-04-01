@@ -322,18 +322,6 @@ jobs:
               echo build successful
 
       - create-dotenv-file
-      
-      - run: 
-          name: "upgrade packages."
-          become: true
-          apt:
-            upgrade: "yes"
-      - run: 
-          name: "install dependencies."
-          become: true
-          apt:
-            name: ["nodejs", "npm"]
-            update_cache: yes
        
       - run:
           name: Configure server
