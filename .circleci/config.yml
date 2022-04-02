@@ -329,29 +329,36 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            apk add --update curl nodejs npm
+            apk add --update curl
+            pip install --upgrade pip
             pip install awscli
       - run:
           name: Backend smoke test.
           command: |
-            echo "Wait 10 seconds for backend to become reachable"
-            sleep 10
-            export BACKEND_IP=$(aws ec2 describe-instances \
-              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID}" \
-              --query 'Reservations[*].Instances[*].PublicIpAddress' \
-              --output text)
-            echo "BACKEND_IP: ${BACKEND_IP}"
-            curl "http://${BACKEND_IP}:3030/api/status"
+            BACKEND_IP=$(curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/backendurl)
+
+            echo ${BACKEND_IP}
+
+            API_URL="http://${BACKEND_IP}:3030"
+
+            echo ${API_URL}
+
+            if curl -s "${BACKEND_IP}/api/status" | grep "ok"
+            then
+                return 0
+            else
+                return 1
+            fi
       - run:
           name: Frontend smoke test.
           command: |
-            export FRONTEND_URL="http://udapeople-${CIRCLE_WORKFLOW_ID}.s3.eu-central-1.amazonaws.com/index.html"
-            echo "FRONTEND_URL: ${FRONTEND_URL}"
-            if curl -s ${FRONTEND_URL} | grep "Welcome"
+            URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-east-1.amazonaws.com/#/employees"            
+            echo ${URL} 
+            if curl -s ${URL} | grep "Welcome"
             then
-              exit 1
+              return 1
             else
-              exit 1
+              return 1
             fi
       - destroy-environment:
           workflowID: ${CIRCLE_WORKFLOW_ID:0:7}
