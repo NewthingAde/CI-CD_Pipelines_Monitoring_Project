@@ -316,6 +316,10 @@ jobs:
             cd ~/project/backend
             npm install
             tar -C ~/project/backend -czvf ~/project/artifact.tar.gz .
+            cd .circleci/ansible
+            echo "Contents  of the inventory.txt file is -------"
+            cat inventory.txt
+            cat .env
             ansible-playbook -i ~/inventory.txt ~/project/.circleci/ansible/deploy-backend.yml       
       
       - create-dotenv-file
