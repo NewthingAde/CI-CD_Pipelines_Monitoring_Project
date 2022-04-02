@@ -1,31 +1,28 @@
 ---
-- name: "Create new directory 'backend'"
-  file:
-    path: ~/backend
-    state: directory
+- name: "upgrade packages."
+  become: true
+  apt:
+    upgrade: "yes"
+- name: "install dependencies."
+  become: true
+  apt:
+    name: ["nodejs", "npm"]
+    update_cache: yes
 
-- name: "Move compressed backend Archive"
-  copy:
-    src: ~/project/artifact.tar.gz
-    dest: ~/backend
-
-- name: "Decompress backend Archive"
-  unarchive:
-    src: ~/backend/artifact.tar.gz
-    dest: ~/backend
-    remote_src: yes
-
-- name: "Remove compressed Archive"
-  file:
-    path: ~/backend/artifact.tar.gz
-    state: absent
-
-- name: "Execute 'npm run build'"
-  command: npm run build
-  args:
-    chdir: ~/backend
-
-- name: "Start pm2 server"
-  command: pm2 start npm -- start
-  args:
-    chdir: ~/backend
+- name: Build backend
+  ignore_errors: yes
+  shell: |
+    cd /home/ubuntu/backend
+    npm i
+    npm run build
+- name: Stop and delete already running server
+  ignore_errors: yes
+  shell: |
+    pm2 stop backend
+    pm2 delete backend
+- name: Start server
+  become: true
+  shell: |
+    cd /home/ubuntu/backend
+    pm2 start npm --name backend -- start
+    pm2 ls
