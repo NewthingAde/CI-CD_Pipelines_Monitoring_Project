@@ -342,6 +342,8 @@ jobs:
             tar -C ~/project/backend -czvf ~/project/artifact.tar.gz .
             cd
             ls
+            cd ~/project/.circleci
+            ls
             ansible-playbook -i .circleci/ansible/inventory.txt \
               .circleci/ansible/deploy-backend.yml
               
