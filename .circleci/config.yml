@@ -340,7 +340,7 @@ jobs:
             cd ~/project/backend
             npm install
             tar -C ~/project/backend -czvf ~/project/artifact.tar.gz .
-           
+            cd
             ansible-playbook -i .circleci/ansible/inventory.txt \
               .circleci/ansible/deploy-backend.yml 
       - destroy-environment:
