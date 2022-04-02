@@ -20,10 +20,6 @@
     path: ~/backend/artifact.tar.gz
     state: absent
 
-#- name: "Execute 'npm install'"
-#  command: npm install
-#  args:
-#    chdir: ~/backend
 
 - name: "Execute 'npm run build'"
   command: npm run build
@@ -31,6 +27,8 @@
     chdir: ~/backend
 
 - name: "Start pm2 server"
-  command: pm2 start npm -- start
+  command: 
+          pm2 start npm -- start
+          pm2 logs
   args:
     chdir: ~/backend
