@@ -338,7 +338,7 @@ jobs:
             BACKEND_IP=$(curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/backendurl_${CIRCLE_WORKFLOW_ID:0:7})
             echo ${BACKEND_IP}
 
-            if curl -s "${BACKEND_IP}/api/status" | grep "ok"
+            if curl -s ${BACKEND_IP}/api/status | grep "ok"
             then
                 return 0
             else
