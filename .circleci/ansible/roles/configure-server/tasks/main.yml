@@ -1,0 +1,20 @@
+---
+- name: "update packages"
+  apt:
+    update_cache: yes
+
+- name: "install dependencies"
+  apt:
+    name: [ "python3", "npm", "nodejs", "tar", "gzip" ]
+    state: latest
+    update_cache: yes
+
+- name: "Change npm version to 6.14.4"
+  command: npm install -g npm@6.14.4
+
+- name: "install pm2"
+  npm:
+    name: pm2
+    global: yes
+    production: yes
+    state: present
