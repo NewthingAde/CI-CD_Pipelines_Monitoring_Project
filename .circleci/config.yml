@@ -332,18 +332,14 @@ jobs:
             apk add --update curl
             pip install --upgrade pip
             pip install awscli
+      - create-dotenv-file
       - run:
           name: Backend smoke test.
           command: |
             BACKEND_IP=$(curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/backendurl_${CIRCLE_WORKFLOW_ID:0:7})
-            echo ${BACKEND_IP}
-
-            if curl -s ${BACKEND_IP}/api/status | grep "ok"
-            then
-                return 0
-            else
-                return 1
-            fi
+            API_URL="http://${BACKEND_IP}:3030"
+            echo "${API_URL}"
+            curl -s "${API_URL}/api/status" -v
       - run:
           name: Frontend smoke test.
           command: |
