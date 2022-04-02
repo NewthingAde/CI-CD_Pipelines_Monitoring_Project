@@ -1,34 +1,41 @@
 ---
-- name: "Create new directory 'backend'"
+- name: "install dependencies."
+  become: true
+  apt:
+    name: ["nodejs", "npm"]
+    state: latest
+    update_cache: yes
+
+- name: "install pm2"
+  become: true
+  npm:
+    name: pm2
+    global: yes
+    production: yes
+    state: present
+
+- name: Creates directory
   file:
-    path: ~/backend
+    path: /home/ubuntu/backend
     state: directory
 
-- name: "Move compressed backend Archive"
+- name: Copy backend dist files web server
   copy:
-    src: ~/project/artifact.tar.gz
-    dest: ~/backend
+    src: /root/project/artifact.tar.gz
+    dest: /home/ubuntu/backend/artifact.tar.gz
 
-- name: "Decompress backend Archive"
-  unarchive:
-    src: ~/backend/artifact.tar.gz
-    dest: ~/backend
-    remote_src: yes
-
-- name: "Remove compressed Archive"
-  file:
-    path: ~/backend/artifact.tar.gz
-    state: absent
-
-
-- name: "Execute 'npm run build'"
-  command: npm run build
-  args:
-    chdir: ~/backend
-
-- name: "Start pm2 server"
-  command: 
-          pm2 start npm -- start
-          pm2 logs
-  args:
-    chdir: ~/backend
+- name: Uncompress Backend
+  shell: |
+    cd /home/ubuntu/backend
+    tar xvzf artifact.tar.gz -C .
+    ls -la
+- name: Build
+  become: true
+  shell: |
+    cd /home/ubuntu/backend
+    npm install
+    npm run build
+- name: Start PM2
+  shell: |
+    cd /home/ubuntu/backend 
+    pm2 start npm --name backend -- start
