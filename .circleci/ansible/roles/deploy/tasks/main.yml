@@ -18,6 +18,14 @@
   unarchive:
     src: node_modules.tar.gz
     dest: /home/ubuntu/node_modules/
+    
+- name: "install pm2"
+  become: true
+  npm:
+    name: pm2
+    global: yes
+    production: yes
+    state: present
 
 - name: "start app"
   shell: |       
