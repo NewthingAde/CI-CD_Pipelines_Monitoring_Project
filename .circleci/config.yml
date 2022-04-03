@@ -308,23 +308,40 @@ jobs:
       - run:
           name: Install dependencies
           command: |  
-            apk add --update tar gzip ansible nodejs npm curl
+            pip install --upgrade pip
             pip install awscli
+            apk add --update nodejs npm ansible zip
+     
       - run:
           name: Deploy backend
           command: |
-            cd backend
-            npm install
-            npm run build
-            cd ..
-            tar -C backend -czvf artifact.tar.gz .
-            cd .circleci/ansible
+              cd backend
+              apk add --update nodejs-npm
+              apk add --update npm
+              npm install
+              npm run build
+              echo build successful
+      - create-dotenv-file
+      - run:
+          name: Configure server
+          command: |    
+              cd /root/project/backend/dist
+              tar czf dist.tar.gz .
+              mkdir -p ~/project/.circleci/ansible/roles/deploy/files/
+              mv dist.tar.gz ~/project/.circleci/ansible/roles/deploy/files/
+              cd /root/project/backend/node_modules
+              tar czf node_modules.tar.gz .
+              mv node_modules.tar.gz ~/project/.circleci/ansible/roles/deploy/files/
+
+      - run:
+          name: Deploy backend
+          command: |
+            cd /root/project/.circleci/ansible
             echo "Contents  of the inventory.txt file is -------"
             cat inventory.txt
             export ANSIBLE_HOST_KEY_CHECKING=False
             ansible-playbook -i inventory.txt deploy-backend.yml
-      
-      - create-dotenv-file
+    
       - destroy-environment:
           workflowID: ${CIRCLE_WORKFLOW_ID:0:7}
   
