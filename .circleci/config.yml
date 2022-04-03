@@ -161,8 +161,125 @@ jobs:
           paths: [backend/node_modules]
           key: backend-build
 
+  deploy-infrastructure:
+    docker:
+      - image: amazon/aws-cli
+      # Docker image here that supports AWS CLI
+    steps:
+      - checkout
+      # Checkout code from git
+      - run:
+          name: Install gzip tar
+          command: |
+                yum -y install tar
+                yum -y install gzip
+            
+      - run:
+          name: Ensure back-end infrastructure exists
+          command: |
+            aws cloudformation deploy \
+              --template-file .circleci/files/backend.yml \
+              --tags project=udacity-backend \
+              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
+              
+      - run:
+          name: Ensure front-end infrastructure exist
+          command: |
+            aws cloudformation deploy \
+              --template-file .circleci/files/frontend.yml \
+              --tags project=udacity-frontend \
+              --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}"\
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
+      - run:
+          name: Add back-end ip to ansible inventory
+          command: |
+            aws ec2 describe-instances \
+              --query 'Reservations[*].Instances[*].PublicIpAddress' \
+              --filters "Name=tag:project,Values=udacity-backend" \
+              --output text >> backend_url.txt
+              curl  -d $(cat backend_url.txt) https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/backendurl_${CIRCLE_WORKFLOW_ID:0:7}
+              curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/backendurl_${CIRCLE_WORKFLOW_ID:0:7} >> ./.circleci/ansible/inventory.txt
+                   
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - project/.circleci/ansible/inventory.txt
+      - destroy-environment 
+
+  configure-infrastructure:
+    docker:
+      - image: python:3.7-alpine3.11
+      # Docker image here that supports Ansible
+    steps:
+      - checkout
+      # Checkout code from git
+      - add_ssh_keys:
+          fingerprints: ["22:48:af:fd:76:af:49:65:7c:10:4a:68:63:df:9e:11"]
+      # attach workspace
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Install dependencies
+          command: |
+           pip install --upgrade pip
+           pip install awscli
+           apk add ansible
+      - run:
+          name: Cat inventory
+          command: |
+            cd .circleci/ansible/
+            cat inventory.txt
+      - run:
+          name: Configure server
+          command: |
+            cd .circleci/ansible/
+            ansible-playbook configure-server.yml -i inventory.txt
+      # - run:
+      #     name: Node Exporter Config
+      #     command: |
+      #       cd .circleci/ansible/roles/configure-prometheus-node-exporter/tasks
+      #       ansible-playbook main.yml -i ../../../../inventory.txt
+      - destroy-environment
 
 
+  run-migrations:
+    docker:
+      - image: circleci/node:13.8.0 # Docker image here that supports NodeJS
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [backend-build]
+      - run:
+          name: Prepare Run migrations
+          command: |
+            echo ENVIRONMENT=production > "backend/.env"
+            echo NODE_ENV=production >> "backend/.env"
+            echo TYPEORM_CONNECTION=postgres >> "backend/.env"
+            echo TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts >> "backend/.env"
+            echo TYPEORM_HOST=$TYPEORM_HOST >> "backend/.env"
+            echo TYPEORM_PORT=$TYPEORM_PORT >> "backend/.env"
+            echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> "backend/.env"
+            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> "backend/.env"
+            echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> "backend/.env"
+            echo TYPEORM_MIGRATIONS=./src/migrations/*.ts >> "backend/.env"
+            echo TYPEORM_MIGRATIONS_DIR=./src/migrations >> "backend/.env"
+            cd backend
+            npm install
+            npm run build
+      - revert-migrations
+      - run:
+          name: Run Migration
+          command: |
+            cd backend
+            npm run migrations > migrations_dump
+      - run:
+          name: Send migration results to memstash
+          command: |
+            cd backend
+            cat migrations_dump
+
+      - destroy-environment
 
 
 workflows:
@@ -178,3 +295,12 @@ workflows:
           requires: [build-backend]
       - scan-frontend:
           requires: [build-frontend]
+      - deploy-infrastructure:
+          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
+          filters:
+            branches:
+              only: [main]
+      - configure-infrastructure:
+          requires: [deploy-infrastructure]
+      - run-migrations:
+          requires: [scan-frontend, scan-backend]
