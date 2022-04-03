@@ -266,7 +266,7 @@ jobs:
               curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/migration_${CIRCLE_WORKFLOW_ID:0:7} -d '1'
             fi
       - destroy-environment
-
+      
   deploy-frontend:
     docker:
       - image: amazon/aws-cli
@@ -284,7 +284,7 @@ jobs:
       - run:
           name: Get backend url and setup environment variables
           command: |
-            BACKEND_IP=$(curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/migration_${CIRCLE_WORKFLOW_ID:0:7})
+            BACKEND_IP=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" --query 'Reservations[*].Instances[*].PublicIpAddress' --output text)
             export API_URL="http://${BACKEND_IP}:3030"
 
             echo "${BACKEND_IP}"
@@ -383,7 +383,7 @@ jobs:
       - run:
           name: BE Smoke Test
           command: |
-            BACKEND=$(aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicIpAddress' --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" --output text)
+            BACKEND=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" --query 'Reservations[*].Instances[*].PublicIpAddress' --output text)
             if curl -s ${BACKEND}/api/status | grep "ok"
             then
             return 0
