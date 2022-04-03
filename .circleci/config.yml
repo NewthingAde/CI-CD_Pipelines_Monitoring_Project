@@ -30,10 +30,13 @@ commands:
                 --stack-name udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7} 
               fi
   revert-migrations:
-    description: Revert the last migration if successfully run in the current workflow.    
+    description: Revert the last migration if successfully run in the current workflow.
+    # parameters:
+      # Add parameter here     
     steps:
       - run:
           name: Revert migrations
+          # Add when this will run
           command: |
             # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
             SUCCESS=$curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/migration_${CIRCLE_WORKFLOW_ID:0:7}
@@ -98,64 +101,67 @@ jobs:
             sudo apt install nodejs
             npm i
             npm run test
+           
+      # Your job code here
+                
   test-backend:
-      docker:
-        - image: circleci/node:13.8.0
-        # Docker image here
-      steps:
-        - checkout
-        # Checkout code from git
-        - restore_cache:
-            keys: [backend-build]
-        # Restore from cache
-        - run:  
-            name: Test back-end
-            command: |
-              cd backend
-              sudo apt install nodejs
-              npm i
-              npm run test
-              # Your code here
-        # Your job code here         
+    docker:
+      - image: circleci/node:13.8.0
+      # Docker image here
+    steps:
+      - checkout
+      # Checkout code from git
+      - restore_cache:
+          keys: [backend-build]
+      # Restore from cache
+      - run:  
+          name: Test back-end
+          command: |
+            cd backend
+            sudo apt install nodejs
+            npm i
+            npm run test
+            # Your code here
+      # Your job code here
+            
   scan-frontend:
-      docker:
-        - image: circleci/node:13.8.0
-        # Docker image here
-      steps:
-        - checkout
-        # Checkout code from git
-        - restore_cache:
-            keys: [frontend-build]
-        # Restore from cache
-        - run:  
-            name: Scan front-end
-            command: |
-              cd frontend
-              npm i
-              npm audit fix --audit-level=critical --force
-        # Your job code here
+    docker:
+      - image: circleci/node:13.8.0
+      # Docker image here
+    steps:
+      - checkout
+      # Checkout code from git
+      - restore_cache:
+          keys: [frontend-build]
+      # Restore from cache
+      - run:  
+          name: Scan front-end
+          command: |
+            cd frontend
+            npm i
+            npm audit fix --audit-level=critical --force
+      # Your job code here
 
   scan-backend:
-      docker:
-        - image: circleci/node:13.8.0
-        # Docker image here
-      steps:
-        - checkout
-        # Checkout code from git
-        - restore_cache:
-            keys: [backend-build]
-        # Restore from cache
-        - run:  
-            name: Scan back-end
-            command: |
-              cd backend
-              npm i
-              npm audit fix --audit-level=critical --force
-        # Your job code here
-        - save_cache:
-            paths: [backend/node_modules]
-            key: backend-build
-
+    docker:
+      - image: circleci/node:13.8.0
+      # Docker image here
+    steps:
+      - checkout
+      # Checkout code from git
+      - restore_cache:
+          keys: [backend-build]
+      # Restore from cache
+      - run:  
+          name: Scan back-end
+          command: |
+            cd backend
+            npm i
+            npm audit fix --audit-level=critical --force
+      # Your job code here
+      - save_cache:
+          paths: [backend/node_modules]
+          key: backend-build
 
 
 
