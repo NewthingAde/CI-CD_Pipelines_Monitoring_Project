@@ -213,7 +213,6 @@ jobs:
           command: |
             apk add --update ansible
             pip install awscli
-      - create-dotenv-file
       - run:
           name: Configure server
           command: |
