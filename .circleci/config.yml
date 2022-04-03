@@ -268,23 +268,22 @@ jobs:
             npm install
             npm run build
       - revert-migrations
-      
+
       - run:
-          name: Run database migration
+          name: Send migration results to memstash
           command: |
             cd backend
-            npm install
-            echo "run migration ..."
-            npm run migrations > migrations_dump.txt
-            echo "migrations dump content ..."
-            cat migrations_dump.txt
-      - run:
-          name: Send database migration status to kvdb.io
-          command: |
-            if grep -q "has been executed successfully." ~/project/backend/migrations_dump.txt
-            then
-              curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/migration_${CIRCLE_WORKFLOW_ID:0:7} -d '1'
-            fi
+            cat migrations_dump
+            #cd backend
+            #cat migrations_dump | grep "has been executed successfully" > file.txt
+            #cat file.txt
+            #if (( cat file.txt == "Migration AddEmployee1555722583168 has been executed successfully." ))  
+            #then
+            #    echo "Yes this works >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+            #    curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/migration_${CIRCLE_WORKFLOW_ID:0:7} -d '1'
+            #else
+            #   curl https://kvdb.io/Nucr3yB6RM75Sz5neM8QEo/migration_${CIRCLE_WORKFLOW_ID:0:7} -d '1'
+            #fi
       - destroy-environment
 
 
