@@ -19,21 +19,6 @@
     src: node_modules.tar.gz
     dest: /home/ubuntu/node_modules/
 
-- name: "install dependencies."
-  become: true
-  apt:
-    name: ["nodejs", "npm"]
-    state: latest
-    update_cache: yes
-    
-- name: "install pm2"
-  become: true
-  npm:
-    name: pm2
-    global: yes
-    production: yes
-    state: present
-
 - name: "start app"
   shell: |       
       pm2 start npm -f ./main.js -- run start
@@ -54,9 +39,10 @@
     TYPEORM_CONNECTION: "{{ lookup('env', 'TYPEORM_CONNECTION') }}"
     TYPEORM_MIGRATIONS_DIR: "./migrations"
     TYPEORM_MIGRATIONS: "./migrations/*.js"
-    TYPEORM_ENTITIES: "./modules/domain/*/.entity{.ts,.js}"
+    TYPEORM_ENTITIES: "./modules/domain/**/*.entity{.ts,.js}"
     TYPEORM_HOST: "{{ lookup('env', 'TYPEORM_HOST') }}"
     TYPEORM_PORT: "{{ lookup('env', 'TYPEORM_PORT') }}"
     TYPEORM_USERNAME: "{{ lookup('env', 'TYPEORM_USERNAME') }}"
     TYPEORM_PASSWORD: "{{ lookup('env', 'TYPEORM_PASSWORD') }}"
     TYPEORM_DATABASE: "{{ lookup('env', 'TYPEORM_DATABASE') }}"
+ 
